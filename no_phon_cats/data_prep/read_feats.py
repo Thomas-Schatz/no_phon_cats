@@ -16,6 +16,8 @@ to dense format. (It might be more efficient to put them directly
 in some numpy sparse format that can then be transparently used by
 downstream function). For h5features, we access directly features utterance
 by utterance from the hdf5 file, which is better for memory usage.
+
+Main function: get_features_getter.
 """
 
 import h5py

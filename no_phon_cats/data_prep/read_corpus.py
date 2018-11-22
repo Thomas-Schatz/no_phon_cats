@@ -6,12 +6,16 @@ Created on Tue Nov 20 14:13:48 2018
 
 Read and assemble corpus annotations (phone, word, speaker, etc.)
 into a nice pandas dataframe with one entry per phone in the corpus.
+
+Main function is read.
 """
 
 
 import numpy as np
 import pandas as pd
 import io
+import os.path as path
+import yaml
 
 
 def fix_word_column(alignment_file, out_file, verbose=False):
@@ -222,3 +226,73 @@ def check_word_transcripts(corpus):
         if len(trans) > 1:
             d[word] = nb_tokens, trans
     return d
+
+
+def read_conf(conf_file):
+    # Get paths to all relevant files
+    with io.open(conf_file, 'r') as fh:
+        files = yaml.read(fh)
+    return files
+
+
+def get_bad_utts(corpus_name):
+    # There is something wrong with the word-tier of the alignment for a few sentences
+    # (as found with the remove_word_sils and check_word_transcripts functions). For now we just drop these.
+    # Ultimately it would be better to fix the issue at the source (abkhazia probably)
+    #TODO: other corpora
+    bad_utts = {'WSJ': ['46sc0308', '46sc030w', '47gc030t', '47gc0316', '47gc0317', '49jc0316',
+                        '4a1c041b', '47gc020s', '49jc030p', '47rc030d', '48hc021b', '4a1c020l',
+                        '48bc0201', '47xc040o', '49jc030a', '47dc030i'],
+                'CSJ': [],
+                'GPJ': [],
+                'BUC': []}
+    if corpus_name in bad_utts:
+        return bad_utts[corpus_name]
+    else:
+        print('Unknown corpus {}'.format(corpus_name))
+        return []
+
+
+def read(corpus_name, corpus_conf, verbose=False):
+    # Get path to relevant files
+    corpus_files = read_conf(corpus_conf)
+    bad_utts = get_bad_utts(corpus_name)
+
+    # Fix alignment file if not yet fixed
+    corrected_alignment_file = path.join(root, 'corrected_alignment.txt')
+    if not(path.exists(corpus_files['alignment'])):
+        fix_word_column(corpus_files['defective alignment'], corpus_files['alignment'], verbose=verbose)
+
+    # Get corpus silences
+    silences = load_silences(corpus_files['silences'])
+
+    # Prepare corpus dataframe
+    whole_corpus = load_alignment(corpus_files['alignment'], silences, verbose=1)
+
+    # drop all utterances not in segments
+    utts = get_utterances(corpus_files['segments'])
+    utts = [utt for utt in utts if not(utt in bad_utts)]
+    corpus = filter_utts(whole_corpus, utts)
+
+    # add speaker information
+    corpus = add_speaker_info(corpus, corpus_files['utt2spk'])
+
+    # add observed phonetic transcription for each word (including any silence detected by the aligner)
+    corpus = add_word_phonetic_transcripts(corpus)
+
+    # remove trailing silences at the end of words
+    corpus = remove_word_sils(corpus, silences, verbose=verbose)
+
+    # correct observed word phonetic transcription to remove the trailing silences
+    del corpus['word_trans']
+    corpus = add_word_phonetic_transcripts(corpus)
+
+    # check each word as a unique phonetic transcription
+    faulty = check_word_transcripts(corpus)
+    assert len(faulty) == 0, faulty
+
+    # check there are no silence phone anymore (although they can still appear as previous phone or following phone)
+    sil_phones = corpus[[p in silences for p in corpus['phone']]]
+    assert len(sil_phones) == 0, sil_phones
+
+    return corpus_files, corpus

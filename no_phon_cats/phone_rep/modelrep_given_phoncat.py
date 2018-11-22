@@ -5,6 +5,8 @@ Created on Tue Nov 20 14:13:48 2018
 @author: Thomas Schatz
 
 Functions to compute H(model rep. | phone, context) or related quantities.
+
+Given the gold (forced-aligned) segmentation of the signal into phones, how are the model reps?
 """
 
 
