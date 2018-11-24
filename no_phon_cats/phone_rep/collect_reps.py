@@ -26,6 +26,7 @@ import no_phon_cats.phone_rep.context as contexts
 import no_phon_cats.phone_rep.model_rep as modelreps
 import argparse
 import io
+import yaml
 
 
 def get_phone_reps(corpus, get_utt_features, modelrep_f, context_f, verbose=0):
