@@ -259,7 +259,6 @@ def read(corpus_name, corpus_conf, verbose=False):
     bad_utts = get_bad_utts(corpus_name)
 
     # Fix alignment file if not yet fixed
-    corrected_alignment_file = path.join(root, 'corrected_alignment.txt')
     if not(path.exists(corpus_files['alignment'])):
         fix_word_column(corpus_files['defective alignment'], corpus_files['alignment'], verbose=verbose)
 
