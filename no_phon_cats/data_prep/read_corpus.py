@@ -231,7 +231,7 @@ def check_word_transcripts(corpus):
 def read_conf(conf_file):
     # Get paths to all relevant files
     with io.open(conf_file, 'r') as fh:
-        files = yaml.read(fh)
+        files = yaml.load(fh)
     return files
 
 

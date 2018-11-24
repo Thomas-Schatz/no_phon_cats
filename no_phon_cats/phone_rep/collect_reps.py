@@ -76,7 +76,7 @@ def collect_phone_reps(corpus, models, get_utt_features, modelrep_f, context_f, 
 def read_conf(conf_file):
     # Get paths to all relevant files
     with io.open(conf_file, 'r') as fh:
-        files = yaml.read(fh)
+        files = yaml.load(fh)
     return files
 
 
