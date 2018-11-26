@@ -34,6 +34,7 @@ import seaborn
 import argparse
 from ast import literal_eval as make_tuple
 import no_phon_cats.phone_rep.augment_rep as augment_rep
+import no_phon_cats.phone_rep.select_phone_cats as select_phone_cats
 
 
 def select_data(data, **kwargs):
@@ -255,11 +256,11 @@ def run(in_file, model_conf, out_file, fig_path, by_spk=True, by_word=True, by_p
     """
     data = prepare_data(in_file, model_conf)
     # Select context + phones of interest
-    context_phones = select_phones_in_contexts(data, by_spk=by_spk, by_word=by_word,
-                                               by_phon_context=by_phon_context,
-                                               position_in_word=position_in_word,
-                                               min_wlen=min_wlen, min_occ=min_occ,
-                                               verbose=verbose)
+    context_phones = select_phone_cats.select_phones_in_contexts(data, by_spk=by_spk, by_word=by_word,
+                                                                 by_phon_context=by_phon_context,
+                                                                 position_in_word=position_in_word,
+                                                                 min_wlen=min_wlen, min_occ=min_occ,
+                                                                 verbose=verbose)
     # Collect model-rep. for the context + phones of interest
     cp_data = collect_model_reps(data, context_phones, verbose=verbose)
     # Generously correct for possible misalignment by computing cardinal of minimal hitting set for the 
