@@ -11,6 +11,9 @@ Given the gold (forced-aligned) segmentation of the signal into phones, how are 
 Main function: run
 """
 
+"""
+# This can be used to plot nicer figures but requires xelatex
+# as this is usually not available on a cluster, we do not use it here
 import matplotlib as mpl
 mpl.use("pgf")
 pgf_with_custom_preamble = {
@@ -23,7 +26,7 @@ pgf_with_custom_preamble = {
          ]
 }
 mpl.rcParams.update(pgf_with_custom_preamble)
-
+"""
 
 import numpy as np
 import pandas as pd
