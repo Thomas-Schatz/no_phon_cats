@@ -204,9 +204,15 @@ def barplot_nunq(nb_unq_rep, fig_path=None):
         g.savefig(fig_path)
 
 
+def read_conf(conf_file):
+    # Get paths to all relevant files
+    with io.open(conf_file, 'r') as fh:
+        files = yaml.load(fh)
+    return files
 
-def prepare_data(data_file):
-    # Load and prepare data
+
+def prepare_data(data_file, model_conf):
+    # Load and prepare data 
     data = pd.read_csv(data_file, low_memory=False)
     del data["Unnamed: 0"]
     # parse tuple not properly parsed by read_csv (this is slow)
@@ -214,6 +220,7 @@ def prepare_data(data_file):
     data['word_trans'] = [make_tuple(trans) for trans in data['word_trans']]
     
     # Make 'HMM-state' model-rep. more explicit
+    model_files = read_conf(model_conf) 
     hmm_state_info = augment_rep.get_hmm_state_info(model_files['HMM-transitions'])
     # order: phone, word-position, hmm-state, transition-index, state-pdf
     explicit = lambda state: hmm_state_info[state]
@@ -233,11 +240,6 @@ def prepare_data(data_file):
     return data
 
 
-def read_conf(conf_file):
-    # Get paths to all relevant files
-    with io.open(conf_file, 'r') as fh:
-        files = yaml.load(fh)
-    return files
 
 
 def run(in_file, model_conf, out_file, fig_path, by_spk=True, by_word=True, by_phon_context=True,
@@ -251,8 +253,7 @@ def run(in_file, model_conf, out_file, fig_path, by_spk=True, by_word=True, by_p
         out_file: path to csv file where selected context_phones + counts will be stored
         fig_path: path where to store bar plot of results
     """
-    data = prepare_data(in_file)
-    model_files = read_conf(model_conf)  
+    data = prepare_data(in_file, model_conf)
     # Select context + phones of interest
     context_phones = select_phones_in_contexts(data, by_spk=by_spk, by_word=by_word,
                                                by_phon_context=by_phon_context,
