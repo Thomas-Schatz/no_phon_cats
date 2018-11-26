@@ -27,6 +27,9 @@ pgf_with_custom_preamble = {
 }
 mpl.rcParams.update(pgf_with_custom_preamble)
 """
+# instead we use
+import matplotlib
+matplotlib.use('agg')
 
 import numpy as np
 import pandas as pd
