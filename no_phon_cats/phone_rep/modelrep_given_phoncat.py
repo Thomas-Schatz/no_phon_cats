@@ -279,7 +279,7 @@ if __name__=='__main__':
     parser.add_argument('fig_path')
     parser.add_argument('--by_spk', type=bool, default=True)
     parser.add_argument('--by_word', type=bool, default=True)
-    parser.add_argument('--by_phone_context', type=bool, default=True)
+    parser.add_argument('--by_phon_context', type=bool, default=True)
     parser.add_argument('--position_in_word', default='middle')
     parser.add_argument('--min_wlen', type=int, default=5)
     parser.add_argument('--min_occ', type=int, default=10)
