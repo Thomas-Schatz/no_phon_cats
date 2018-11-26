@@ -7,14 +7,33 @@ Created on Tue Nov 20 14:13:48 2018
 Functions to compute H(model rep. | phone, context) or related quantities.
 
 Given the gold (forced-aligned) segmentation of the signal into phones, how are the model reps?
+
+Main function: run
 """
+
+import matplotlib as mpl
+mpl.use("pgf")
+pgf_with_custom_preamble = {
+    "font.family": "serif", # use serif/main font for text elements
+    "text.usetex": True,    # use inline math for ticks
+    "pgf.rcfonts": False,   # don't setup fonts from rc parameters
+    "pgf.preamble": [
+         "\\usepackage{unicode-math}",  # unicode math setup
+         "\\setmainfont{Doulos SIL}" # serif font via preamble
+         ]
+}
+mpl.rcParams.update(pgf_with_custom_preamble)
 
 
 import numpy as np
 import pandas as pd
 import io
+import yaml
 import time
 import seaborn
+import argparse
+from ast import literal_eval as make_tuple
+import no_phon_cats.phone_rep.augment_rep as augment_rep
 
 
 def select_data(data, **kwargs):
@@ -163,6 +182,7 @@ def count_unq_rep(cp, cp_data, modelrep_col, verbose=False, max_time=-1):
 
 
 def barplot_nunq(nb_unq_rep, fig_path=None):
+    # plot results
     palette = {'HMM-phone': seaborn.xkcd_rgb["gunmetal"],
                'HMM-state': seaborn.xkcd_rgb["fawn"],
                'GMM': seaborn.xkcd_rgb["light peach"]}
@@ -182,3 +202,92 @@ def barplot_nunq(nb_unq_rep, fig_path=None):
     g.despine(left=True)
     if not(fig_path is None):
         g.savefig(fig_path)
+
+
+
+def prepare_data(data_file):
+    # Load and prepare data
+    data = pd.read_csv(data_file, low_memory=False)
+    del data["Unnamed: 0"]
+    # parse tuple not properly parsed by read_csv (this is slow)
+    data['modelrep'] = [make_tuple(modelrep) for modelrep in data['modelrep']]
+    data['word_trans'] = [make_tuple(trans) for trans in data['word_trans']]
+    
+    # Make 'HMM-state' model-rep. more explicit
+    hmm_state_info = augment_rep.get_hmm_state_info(model_files['HMM-transitions'])
+    # order: phone, word-position, hmm-state, transition-index, state-pdf
+    explicit = lambda state: hmm_state_info[state]
+    data['modelrep'] = [tuple([explicit(state) for state in seq]) if model=='HMM-state' else seq
+                                         for model, seq in zip(data['model'], data['modelrep'])]
+    # Create 'reduced modelrep' column with reduced HMM-state (ignore word-position and transition-index and get unique hash)
+    # rep for other models are copied without change
+    # Do we want to remove 'hmm-state'?
+    # Will make a difference only if the same state-pdf is used for two possible successive states of a same phone.
+    # Let's keep it for now.
+    phones = list(set([e[0] for rep, model in zip(data['modelrep'], data['model']) if model=='HMM-state' for e in rep]))
+    hmm_states = list(set([e[2] for rep, model in zip(data['modelrep'], data['model']) if model=='HMM-state' for e in rep]))
+    reduce = lambda state: phones.index(state[0]) + len(phones)*hmm_states.index(state[2]) + len(phones)*len(hmm_states)*state[4]
+    data['reduced modelrep'] = [tuple([reduce(state) for state in seq]) if model=='HMM-state' else seq
+                                         for model, seq in zip(data['model'], data['modelrep'])]
+
+    return data
+
+
+def read_conf(conf_file):
+    # Get paths to all relevant files
+    with io.open(conf_file, 'r') as fh:
+        files = yaml.load(fh)
+    return files
+
+
+def run(in_file, model_conf, out_file, fig_path, by_spk=True, by_word=True, by_phon_context=True,
+        position_in_word='middle', min_wlen=5, min_occ=10, verbose=False):
+    """
+    Run analysis and plot results. Default is most conservative analysis.
+
+    Input:
+        in_file: path to csv file containing modelreps
+        model_conf: conf file containing path to hmm transitions file
+        out_file: path to csv file where selected context_phones + counts will be stored
+        fig_path: path where to store bar plot of results
+    """
+    data = prepare_data(in_file)
+    model_files = read_conf(model_conf)  
+    # Select context + phones of interest
+    context_phones = select_phones_in_contexts(data, by_spk=by_spk, by_word=by_word,
+                                               by_phon_context=by_phon_context,
+                                               position_in_word=position_in_word,
+                                               min_wlen=min_wlen, min_occ=min_occ,
+                                               verbose=verbose)
+    # Collect model-rep. for the context + phones of interest
+    cp_data = collect_model_reps(data, context_phones, verbose=verbose)
+    # Generously correct for possible misalignment by computing cardinal of minimal hitting set for the 
+    # model representation
+    # Possible improvements: make correction optional? Other metrics than unique counts?
+    nb_unq_rep = count_unq_rep(context_phones, cp_data, 'reduced modelrep')
+    nb_unq_rep.to_csv(out_file)
+    # Bar plot
+    barplot_nunq(nb_unq_rep, fig_path=fig_path)
+
+
+
+if __name__=='__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('in_file')
+    parser.add_argument('model_conf')
+    parser.add_argument('out_file')
+    parser.add_argument('fig_path')
+    parser.add_argument('--by_spk', type=bool, default=True)
+    parser.add_argument('--by_word', type=bool, default=True)
+    parser.add_argument('--by_phone_context', type=bool, default=True)
+    parser.add_argument('--position_in_word', default='middle')
+    parser.add_argument('--min_wlen', type=int, default=5)
+    parser.add_argument('--min_occ', type=int, default=10)
+    parser.add_argument('--verbose', action='store_true')
+    args = parser.parse_args()
+    assert args.min_wlen >=1
+    assert args.min_occ >= 0
+    run(args.in_file, args.model_conf, args.out_file, args.fig_path,
+        args.by_spk, args.by_word, args.by_phon_context,
+        args.position_in_word, args.min_wlen, args.min_occ,
+        args.verbose)

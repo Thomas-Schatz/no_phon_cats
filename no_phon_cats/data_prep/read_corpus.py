@@ -266,7 +266,7 @@ def read(corpus_name, corpus_conf, verbose=False):
     silences = load_silences(corpus_files['silences'])
 
     # Prepare corpus dataframe
-    whole_corpus = load_alignment(corpus_files['alignment'], silences, verbose=1)
+    whole_corpus = load_alignment(corpus_files['alignment'], silences, verbose=verbose)
 
     # drop all utterances not in segments
     utts = get_utterances(corpus_files['segments'])
