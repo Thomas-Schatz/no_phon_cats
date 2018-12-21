@@ -156,12 +156,19 @@ def get_minimal_hitting_set(data):
     return hit_set
 
 
-def count_unq_rep(cp, cp_data, modelrep_col, verbose=False, max_time=-1):
+def count_unq_rep(cp, cp_data, modelrep_col, verbose=False, max_time=-1, max_nb_rep=10):
     # Generously correct for possible misalignment by computing cardinal of minimal hitting set for the 
     # model representation
-    
-    def count_rep(data):
+
+    # max_nb_rep: if there are more than that number of representations, draw that number of representation
+    # at random (without replacement) and get nb of uniq rep for that subset. 
+
+    def count_rep(data, max_nb_rep=max_nb_rep):
+        # data is a pandas.Series
         cr_verbose = (verbose > 1)
+        if len(data) > max_nb_rep:
+            perm = np.random.permutation(data.index)
+            data = data[perm[:max_nb_rep]]
         res = get_minimal_hitting_set_size([np.array(e) for e in data],
                                            verbose=cr_verbose,
                                            max_time=max_time)
@@ -250,7 +257,7 @@ def prepare_data(data_file, model_conf):
 
 
 def run(in_file, model_conf, out_file, fig_path, by_spk=True, by_word=True, by_phon_context=True,
-        position_in_word='middle', min_wlen=5, min_occ=10, verbose=False):
+        position_in_word='middle', min_wlen=5, min_occ=10, max_nb_rep=10, verbose=False):
     """
     Run analysis and plot results. Default is most conservative analysis.
 
@@ -272,7 +279,7 @@ def run(in_file, model_conf, out_file, fig_path, by_spk=True, by_word=True, by_p
     # Generously correct for possible misalignment by computing cardinal of minimal hitting set for the 
     # model representation
     # Possible improvements: make correction optional? Other metrics than unique counts?
-    nb_unq_rep = count_unq_rep(context_phones, cp_data, 'reduced modelrep')
+    nb_unq_rep = count_unq_rep(context_phones, cp_data, 'reduced modelrep', max_nb_rep=max_nb_rep)
     nb_unq_rep.to_csv(out_file)
     # Bar plot
     barplot_nunq(nb_unq_rep, fig_path=fig_path)
@@ -291,11 +298,13 @@ if __name__=='__main__':
     parser.add_argument('--position_in_word', default='middle')
     parser.add_argument('--min_wlen', type=int, default=5)
     parser.add_argument('--min_occ', type=int, default=10)
+    parser.add_argument('--max_nb_rep', type=int, default=10)
     parser.add_argument('--verbose', action='store_true')
     args = parser.parse_args()
-    assert args.min_wlen >=1
+    assert args.min_wlen >= 1
     assert args.min_occ >= 0
+    assert args.max_nb_rep >= 1
     run(args.in_file, args.model_conf, args.out_file, args.fig_path,
         args.by_spk, args.by_word, args.by_phon_context,
-        args.position_in_word, args.min_wlen, args.min_occ,
+        args.position_in_word, args.min_wlen, args.min_occ, args.max_nb_rep,
         args.verbose)
