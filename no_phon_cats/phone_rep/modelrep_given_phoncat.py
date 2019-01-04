@@ -333,7 +333,9 @@ def run(in_file, model_conf, out_file, fig_path_l, fig_path_u, by_spk=True, by_w
     cp_data = select_phone_cats.get_context_phone_occs(data, context_phones, verbose=verbose)
 
     if save_cp_data:
-        # hacky...
+        # hacky... -> better to have two separate scripts: 
+        #   one to get contextphones + cp_data with no modelrep given just a test corpus (no features, dur, seed, etc. needed) -> use only read corpus
+        #   one to do the rest.
         cp_path = out_file + '_phoncat_types.txt'
         cp_data_path = out_file + '_phoncat_items.txt'
         context_phones.to_csv(cp_path)
