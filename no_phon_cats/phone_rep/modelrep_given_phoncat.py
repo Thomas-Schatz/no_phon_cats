@@ -179,7 +179,7 @@ def estimate_H(cp_data, estimator, models, repcol_name, estimator_name='H',
     H = cp_data.groupby("context+phone ID", as_index=False).agg(agg_spec)
     dfs = []
     for model in models:
-        df = H[repcol + ' ' + model].copy()
+        df = H[repcol_name + ' ' + model].copy()
         df['context+phone ID'] = H['context+phone ID']
         df['model'] = [model]*len(df)
         df = df.rename(columns={estimator.__name__: estimator_name})
