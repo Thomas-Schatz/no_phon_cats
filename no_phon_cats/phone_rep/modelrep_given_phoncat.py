@@ -372,7 +372,7 @@ if __name__=='__main__':
     parser.add_argument('--sampling_type', default='uniform')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--nb_samples', type=int, default=10)
-    parser.add_argument('--verbose', action='store_true')
+    parser.add_argument('--verbose', action=store_true)
     args = parser.parse_args()
     assert args.min_wlen >= 1
     assert args.min_occ >= 0
