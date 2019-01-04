@@ -12,16 +12,14 @@ As long as memory is not an issue it makes sense to go for the most detailed con
 as it is always possible to derived less detail representations from them later on.
 """
 
+def word_phone_spk_context_cols():
+    return ('word', 'word_trans', 'phone_pos', 'prev_phone', 'next_phone', 'spk',
+            'utt', 'word_start', 'word_stop', 'start', 'stop')
+
 
 def word_phone_spk_context(phone_info):
-    context = (phone_info['word'], phone_info['word_trans'], phone_info['phone_pos'],
-               phone_info['prev_phone'], phone_info['next_phone'],
-               phone_info['spk'])
+    context = tuple([phone_info[col] for col in word_phone_spk_context_cols()])
     return context
-
-
-def word_phone_spk_context_cols():
-    return ('word', 'word_trans', 'phone_pos', 'prev_phone', 'next_phone', 'spk')
 
 
 def word_context(phone_info):

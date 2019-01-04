@@ -294,4 +294,9 @@ def read(corpus_name, corpus_conf, verbose=False):
     sil_phones = corpus[[p in silences for p in corpus['phone']]]
     assert len(sil_phones) == 0, sil_phones
 
+    # add columns indicating word start and stop for each phone
+    groups = corpus.groupby(['utt', 'word_pos'])
+    corpus['word_start'] = groups['start'].transform(np.min)
+    corpus['word_stop'] = groups['stop'].transform(np.max)
+
     return corpus_files, corpus
