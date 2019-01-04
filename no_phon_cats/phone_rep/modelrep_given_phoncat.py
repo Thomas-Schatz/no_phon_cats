@@ -291,7 +291,7 @@ def prepare_data(data_file, model_conf):
 def run(in_file, model_conf, out_file, fig_path_l, fig_path_u, by_spk=True, by_word=True, by_phon_context=True,
         position_in_word='middle', min_wlen=5, min_occ=10, max_time=5,
         sample_items=True, sampling_type='uniform', seed=0, nb_samples=10,
-        verbose=False, cp_data=False):
+        verbose=False, save_cp_data=False):
     """
     Run analysis and plot results. Default is most conservative analysis.
 
@@ -332,7 +332,7 @@ def run(in_file, model_conf, out_file, fig_path_l, fig_path_u, by_spk=True, by_w
     # Get occurrences of selected context+phones available in data with pointer back to relevant context+phone
     cp_data = select_phone_cats.get_context_phone_occs(data, context_phones, verbose=verbose)
 
-    if cp_data:
+    if save_cp_data:
         # hacky...
         cp_path = out_file + '_phoncat_types.txt'
         cp_data_path = out_file + '_phoncat_items.txt'
