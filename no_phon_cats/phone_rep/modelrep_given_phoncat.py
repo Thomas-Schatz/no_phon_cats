@@ -288,12 +288,10 @@ def prepare_data(data_file, model_conf):
     return data, models
 
 
-
-
 def run(in_file, model_conf, out_file, fig_path_l, fig_path_u, by_spk=True, by_word=True, by_phon_context=True,
         position_in_word='middle', min_wlen=5, min_occ=10, max_time=5,
         sample_items=True, sampling_type='uniform', seed=0, nb_samples=10,
-        verbose=False):
+        verbose=False, cp_data=False):
     """
     Run analysis and plot results. Default is most conservative analysis.
 
@@ -334,23 +332,30 @@ def run(in_file, model_conf, out_file, fig_path_l, fig_path_u, by_spk=True, by_w
     # Get occurrences of selected context+phones available in data with pointer back to relevant context+phone
     cp_data = select_phone_cats.get_context_phone_occs(data, context_phones, verbose=verbose)
 
-    if sample_items:
-        # Beware that this might reduce the number of actually usable context+phones if the sampling has
-        # some requirements like random_select_across_spk
-        # Select nb_samples occurrences of each context+phone at random (will be the same subset for all models)
-        cp_data = select_phone_cats.select_cp_occs(cp_data, sel_f, seed=seed, verbose=verbose)
+    if cp_data:
+        # hacky...
+        cp_path = out_file + '_phoncat_types.txt'
+        cp_data_path = out_file + '_phoncat_items.txt'
+        context_phones.to_csv(cp_path)
+        cp_data.to_csv(cp_data_path)
+    else:
+        if sample_items:
+            # Beware that this might reduce the number of actually usable context+phones if the sampling has
+            # some requirements like random_select_across_spk
+            # Select nb_samples occurrences of each context+phone at random (will be the same subset for all models)
+            cp_data = select_phone_cats.select_cp_occs(cp_data, sel_f, seed=seed, verbose=verbose)
 
-    # Generously correct for possible misalignment by computing cardinal of minimal hitting set for the 
-    # model representation
-    # Possible improvements: make correction optional? Other metrics than unique counts?
-    H_estimator = lambda data: count_unq_rep(data, max_time=max_time, verbose=verbose)
-    nb_unq_rep = estimate_H(cp_data, H_estimator, models, repcol, estimator_name='nunique')
-    nb_unq_rep['nunique_lb'] = [e for e, f in nb_unq_rep['nunique']]
-    nb_unq_rep['nunique_ub'] = [f for e, f in nb_unq_rep['nunique']]
-    nb_unq_rep.to_csv(out_file)
-    # Bar plot
-    barplot_nunq(nb_unq_rep, y_col='nunique_lb', fig_path=fig_path_l)
-    barplot_nunq(nb_unq_rep, y_col='nunique_ub', fig_path=fig_path_u)
+        # Generously correct for possible misalignment by computing cardinal of minimal hitting set for the 
+        # model representation
+        # Possible improvements: make correction optional? Other metrics than unique counts?
+        H_estimator = lambda data: count_unq_rep(data, max_time=max_time, verbose=verbose)
+        nb_unq_rep = estimate_H(cp_data, H_estimator, models, repcol, estimator_name='nunique')
+        nb_unq_rep['nunique_lb'] = [e for e, f in nb_unq_rep['nunique']]
+        nb_unq_rep['nunique_ub'] = [f for e, f in nb_unq_rep['nunique']]
+        nb_unq_rep.to_csv(out_file)
+        # Bar plot
+        barplot_nunq(nb_unq_rep, y_col='nunique_lb', fig_path=fig_path_l)
+        barplot_nunq(nb_unq_rep, y_col='nunique_ub', fig_path=fig_path_u)
 
 
 
@@ -373,13 +378,15 @@ if __name__=='__main__':
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--nb_samples', type=int, default=10)
     parser.add_argument('--verbose', action='store_true')
+    parser.add_argument('--cp_data', action='store_true')
     args = parser.parse_args()
     assert args.min_wlen >= 1
     assert args.min_occ >= 0
     if args.sample_items:
         assert args.nb_samples > 0
+        save_cp_data = args.save_cp_data
     run(args.in_file, args.model_conf, args.out_file, args.fig_path_l, args.fig_path_u,
         args.by_spk, args.by_word, args.by_phon_context,
         args.position_in_word, args.min_wlen, args.min_occ, args.max_time,
         args.sample_items, args.sampling_type, args.seed, args.nb_samples,
-        args.verbose)
+        args.verbose, args.cp_data)
