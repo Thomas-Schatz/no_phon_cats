@@ -323,6 +323,7 @@ def run(in_file, model_conf, out_file, fig_path_l, fig_path_u, by_spk=True, by_w
 
     data, models = prepare_data(in_file, model_conf)
     # Select context + phones of interest
+    print(by_spk)
     context_phones = select_phone_cats.select_phones_in_contexts(data, by_spk=by_spk, by_word=by_word,
                                                                  by_phon_context=by_phon_context,
                                                                  position_in_word=position_in_word,
@@ -337,6 +338,9 @@ def run(in_file, model_conf, out_file, fig_path_l, fig_path_u, by_spk=True, by_w
         cp_path = out_file + '_phoncat_types.txt'
         cp_data_path = out_file + '_phoncat_items.txt'
         context_phones.to_csv(cp_path)
+        for model in models:
+            del cp_data['modelrep {}'.format(model)]
+            del cp_data['reduced modelrep {}'.format(model)]
         cp_data.to_csv(cp_data_path)
     else:
         if sample_items:
