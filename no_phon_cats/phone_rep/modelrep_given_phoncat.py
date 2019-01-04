@@ -323,7 +323,6 @@ def run(in_file, model_conf, out_file, fig_path_l, fig_path_u, by_spk=True, by_w
 
     data, models = prepare_data(in_file, model_conf)
     # Select context + phones of interest
-    print(by_spk)
     context_phones = select_phone_cats.select_phones_in_contexts(data, by_spk=by_spk, by_word=by_word,
                                                                  by_phon_context=by_phon_context,
                                                                  position_in_word=position_in_word,
@@ -388,8 +387,9 @@ if __name__=='__main__':
     assert args.min_occ >= 0
     if args.sample_items:
         assert args.nb_samples > 0
+    print(args)
     run(args.in_file, args.model_conf, args.out_file, args.fig_path_l, args.fig_path_u,
-        args.by_spk, args.by_word, args.by_phon_context,
-        args.position_in_word, args.min_wlen, args.min_occ, args.max_time,
-        args.sample_items, args.sampling_type, args.seed, args.nb_samples,
-        args.verbose, args.cp_data)
+        by_spk=args.by_spk, by_word=args.by_word, by_phon_context=args.by_phon_context,
+        position_in_word=args.position_in_word, min_wlen=args.min_wlen, min_occ=args.min_occ, max_time=args.max_time,
+        sample_items=args.sample_items, sampling_type=args.sampling_type, seed=args.seed, nb_samples=args.nb_samples,
+        verbose=args.verbose, save_cp_data=args.cp_data)
