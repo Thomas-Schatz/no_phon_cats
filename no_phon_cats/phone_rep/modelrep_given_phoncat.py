@@ -378,7 +378,7 @@ if __name__=='__main__':
     assert args.min_occ >= 0
     if args.sample_items:
         assert args.nb_samples > 0
-    run(args.in_file, args.model_conf, args.out_file, args.fig_path_l, args.fig_path_u
+    run(args.in_file, args.model_conf, args.out_file, args.fig_path_l, args.fig_path_u,
         args.by_spk, args.by_word, args.by_phon_context,
         args.position_in_word, args.min_wlen, args.min_occ, args.max_time,
         args.sample_items, args.sampling_type, args.seed, args.nb_samples,
