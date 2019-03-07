@@ -82,7 +82,7 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
   models = ['GMM', 'HMM-phone', 'HMM-state']  #'HMM-tied-state']
   if duration_test_type == 'basic':
     get_dur = lambda feats: duration.get_duration_basic(feats, frame_dur)
-  elif duration_test_type == 'conservative';
+  elif duration_test_type == 'conservative':
     get_dur = lambda feats: duration.get_duration_conservative(feats, max_nb_frames, frame_dur, min_thr)
   else:
     raise ValueError('Unsupported type of duration test: {}'.format(duration_test_type))
