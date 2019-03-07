@@ -149,6 +149,6 @@ if __name__=='__main__':
     parser.add_argument('--verbose', action='store_true')
     args = parser.parse_args()
     collect(args.corpus_name, args.corpus_conf, args.feats_conf, args.model_conf,
-            out=args.out, max_nb_frame=args.max_nb_frame, frame_dur=args.frame_dur,
+            out=args.out, max_nb_frames=args.max_nb_frame, frame_dur=args.frame_dur,
             min_thr=args.min_thr, duration_test_type=args.duration_test_type,
             verbose=args.verbose)
