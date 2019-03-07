@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Nov 20 14:13:48 2018
-
+Created on Thu Mar 7 13:15:00 2019
 @author: Thomas Schatz
 
-Augmenting model representations with additional information
-
-(currently only functions to add information about HMM-states for kaldi HMM models)
 """
 
-
+import numpy as np
 import pandas as pd
 import io
 
@@ -71,3 +67,49 @@ def get_hmm_state_info(transitions_file):
 
 def augment_hmm_state(state, trans_info):
     return (state, *trans_info[state])
+
+
+def get_folding_plan(hmm_states, reduced_states, reducer):
+    plan = {}
+    for state_hash in hmm_states:
+        rstate = reducer(hmm_states[state_hash])
+        rstate_hash = reduced_states.index(rstate)
+        if rstate_hash in plan:
+            plan[rstate_hash].append(state_hash)
+        else:
+            plan[rstate_hash] = [state_hash]
+    assert set(plan) == set(range(len(reduced_states)))
+    return plan
+
+
+def fold_state(feat_matrix, folding_plan):
+    reduced_feats = []
+    for rdim in range(len(folding_plan)):
+        # a quick hack to handle the fact that we do not include dimensions at the end
+        # of the posterior if they are never used (see observed_dimension thing above)
+        # this is not ideal (it's not very efficient and could mask some actual errors...)
+        dims = folding_plan[rdim]
+        dims.sort()
+        dims = np.array(dims)
+        dims = dims[dims < feat_matrix.shape[1]]
+        if len(dims) == 0:
+            # not sure if this is necessary, maybe numpy can handle this smartly?
+            reduced_feats.append(np.zeros(shape=(feat_matrix.shape[0],)))
+        else:
+            reduced_feats.append(feat_matrix[:, dims].sum(axis=1))
+    reduced_feats = np.column_stack(reduced_feats)
+    return reduced_feats
+
+
+def get_hmm_state_folder(transitions_file):
+  # returns a folding function (not a directory)
+  # Get the reduced HMM-state that we are interested (replacing both HMM-tied-state and HMM-state).
+  # order: phone, word-position, hmm-state, transition-index, state-pdf
+  hmm_state_info = get_hmm_state_info(transitions_file)
+  reducer = lambda state: (state[0], state[2], state[4])
+  reduced_states = list(set([reducer(state) for state in hmm_state_info.values()]))
+  # to get info about hash for reduced_state: reduced_states.index(hash) -> returns phone, hmm-state-id, pdf-id
+  hmm_state_folder = lambda feats: fold_state(feats, get_folding_plan(hmm_state_info, reduced_states, reducer))
+  return hmm_state_folder
+
+  

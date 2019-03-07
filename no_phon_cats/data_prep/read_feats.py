@@ -124,7 +124,7 @@ def load_utt_kaldi_post(times, posteriors, post_dim, utt_id):
     return times[utt_id], post
 
 
-def get_features_getter(feat_files):
+def get_features_getter(feat_files, include_tied_state_HMM=False, HMM_states_folder=None):
     """
     Pretty ad hoc function, returning functions that can obtain the features associated with a given utterance
     with the same interface for GMM, HMM-phone, HMM-state, HMM-tied-state features despite the different
@@ -143,31 +143,35 @@ def get_features_getter(feat_files):
     if the N last units are never activated for some N > 0.
     
     Input: dict with:
-            - keys: GMM, HMM-phone, HMM-state, HMM-tied-state
+            - keys: GMM, HMM-phone, HMM-state, (and HMM-tied-state depending on options)
             - value: path to features_file to be analysed
         
     Output: dict with:
-            - keys: GMM, HMM-phone, HMM-state, HMM-tied-state
+            - keys: GMM, HMM-phone, HMM-state, (and HMM-tied-state depending on options)
             - value: function: utt_id -> 
                                 (times: nb_frames float numpy.array ,
                                  feats: [nb_frames x apparent_feat_dim] float numpy.array)
     """
+    if HMM_states_folder is None:
+        HMM_states_folder = lambda x: x
     t, post, dim = {}, {}, {}
     t['HMM-state'], post['HMM-state'], dim['HMM-state'] = load_kaldi_post(feat_files['HMM-state'],
                                                                           one_indexed=True)
-    t['HMM-tied-state'], post['HMM-tied-state'], dim['HMM-tied-state'] = load_kaldi_post(feat_files['HMM-tied-state'],
-                                                                                         one_indexed=False)
+    if include_tied_state_HMM:
+        t['HMM-tied-state'], post['HMM-tied-state'], dim['HMM-tied-state'] = load_kaldi_post(feat_files['HMM-tied-state'],
+                                                                                             one_indexed=False)
     get_utt_features = {'GMM': lambda utt_id: load_utt_features(feat_files['GMM'], utt_id),
                         'HMM-phone': lambda utt_id: load_utt_features(feat_files['HMM'], utt_id),
-                        'HMM-state': lambda utt_id: load_utt_kaldi_post(t['HMM-state'],
-                                                                        post['HMM-state'],
-                                                                        dim['HMM-state'],
-                                                                        utt_id),
-                        'HMM-tied-state': lambda utt_id: load_utt_kaldi_post(t['HMM-tied-state'],
-                                                                             post['HMM-tied-state'],
-                                                                             dim['HMM-tied-state'],
-                                                                             utt_id)
-                       }
+                        'HMM-state': lambda utt_id: HMM_states_folder(load_utt_kaldi_post(t['HMM-state'],
+                                                                                          post['HMM-state'],
+                                                                                          dim['HMM-state'],
+                                                                                          utt_id))
+                        }
+    if include_tied_state_HMM:
+        get_utt_features['HMM-tied-state'] = lambda utt_id: load_utt_kaldi_post(t['HMM-tied-state'],
+                                                                                post['HMM-tied-state'],
+                                                                                dim['HMM-tied-state'],
+                                                                                utt_id)
     return get_utt_features
 
        
