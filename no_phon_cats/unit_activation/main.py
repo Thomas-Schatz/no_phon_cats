@@ -113,10 +113,10 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
       activation_levels[model, 'no-sil-utts'] = sharpness.activation_sharpness(model, segments_nosil,
                                                                                get_utt_features)
   """
-  durs = {'GMM', 'all utts': [[1.33, 3.39029400580580, 1.], [2.33, 1.], [], [5., 5.5], []],
-          'HMM', 'no-sil utts': [[], [1.33, 3.39029400580580, 1.], [2.33, 1.], [], [5., 5.5], []]}
-  activation_levels = {'GMM', 'all utts': [[1.33, 3.39029400580580, 1.], [2.33, 1.], [5., 5.5]],
-                       'HMM', 'no-sil utts': []}
+  durs = {('GMM', 'all utts'): [[1.33, 3.39029400580580, 1.], [2.33, 1.], [], [5., 5.5], []],
+          ('HMM', 'no-sil utts'): [[], [1.33, 3.39029400580580, 1.], [2.33, 1.], [], [5., 5.5], []]}
+  activation_levels = {('GMM', 'all utts'): [[1.33, 3.39029400580580, 1.], [2.33, 1.], [5., 5.5]],
+                       ('HMM', 'no-sil utts'): []}
   ###
   # Save results
   ###   
