@@ -80,7 +80,7 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
   # We could average first on individual sentences and then over all sentences.
   # Emmanuel tried it without seeing anything different, so here we just average over everything ignoring the grouping
   # into sentences.
-  models = ['GMM', 'HMM-phone', 'HMM-state']  #'HMM-tied-state']
+  models = ['GMM', 'HMM-phone']  #, 'HMM-state']  #'HMM-tied-state']
   if duration_test_type == 'basic':
     get_dur = lambda feats: duration.get_duration_basic(feats, frame_dur)
   elif duration_test_type == 'conservative':
@@ -103,7 +103,7 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
   # Measure activation sharpness feature by feature (how activated does that feature get when it's dominant).
   # Save individual values.
   if not(skip_sharpness):
-    models = ['HMM-phone', 'GMM', 'HMM-state'] #, 'HMM-tied-state']
+    models = ['HMM-phone', 'GMM']  #, 'HMM-state'] #, 'HMM-tied-state']
     activation_levels = {}  # duration and number of dominant episodes for each feature dimension
     for model in models:
         print(model)
