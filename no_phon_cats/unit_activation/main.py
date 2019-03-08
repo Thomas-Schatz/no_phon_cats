@@ -51,8 +51,10 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
   # Load conf
   ###
   corpus_files, corpus = corpus_reader.read(corpus_name, corpus_conf, verbose=verbose)
-  feat_files = read_conf(feats_conf)  
-  model_files = read_conf(model_conf) 
+  feat_files = read_conf(feats_conf)
+  """  
+  model_files = read_conf(model_conf)
+  """
   # Control for utterance onset/offset silence and utterance-medial silence
   # e.g. for WSJ: 
   #  1178/4855 total utterances have no within-utterance silence
