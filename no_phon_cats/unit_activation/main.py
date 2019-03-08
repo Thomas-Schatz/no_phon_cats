@@ -45,6 +45,7 @@ def control_utt_sils(corpus):
 def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
             max_nb_frames=3, frame_dur=.01, min_thr=.05, duration_test_type='basic',
             verbose=False):
+  """
   # With max_nb_frames=3 True False False False True would work
   ###
   # Load conf
@@ -62,7 +63,9 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
   # Prepare features access
   ###
   # folding function for HMM state (not a string)
+  """
   hmm_state_folder, hmm_reduced_state_info = model_reader.get_hmm_state_folder(model_files['HMM-transitions'])
+    """
   # This gives us functions for each of GMM, HMM,
   # HMM-tied-state and HMM-state that take as input a utt-id and return the utt features in dense
   # nb_frames x observed_feat_dim matrix format along with timestamps associated with each frame.
@@ -89,12 +92,12 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
   durs = {}  # duration and number of dominant episodes for each feature dimension
   for model in models:
       print(model)
-      durs[model, 'all utts'] = duration.activation_duration(model, all_segments,
-                                                    get_utt_features,
-                                                    get_duration=get_dur)
-      durs[model, 'no-sil utts'] = duration.activation_duration(model, segments_nosil,
-                                                       get_utt_features,
-                                                       get_duration=get_dur)
+      durs[model, 'all-utts'] = duration.activation_duration(model, all_segments,
+                                                             get_utt_features,
+                                                             get_duration=get_dur)
+      durs[model, 'no-sil-utts'] = duration.activation_duration(model, segments_nosil,
+                                                                get_utt_features,
+                                                                get_duration=get_dur)
   
   ###
   # Sharpness/activation level
@@ -105,17 +108,21 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
   activation_levels = {}  # duration and number of dominant episodes for each feature dimension
   for model in models:
       print(model)
-      activation_levels[model, 'all utts'] = sharpness.activation_sharpness(model, all_segments,
+      activation_levels[model, 'all-utts'] = sharpness.activation_sharpness(model, all_segments,
                                                                             get_utt_features)
-      activation_levels[model, 'no-sil utts'] = sharpness.activation_sharpness(model, segments_nosil,
+      activation_levels[model, 'no-sil-utts'] = sharpness.activation_sharpness(model, segments_nosil,
                                                                                get_utt_features)
-      
+  """
+  durs = {'GMM', 'all utts': [[1.33, 3.39029400580580, 1.], [2.33, 1.], [], [5., 5.5], []],
+          'HMM', 'no-sil utts': [[], [1.33, 3.39029400580580, 1.], [2.33, 1.], [], [5., 5.5], []]}
+  activation_levels = {'GMM', 'all utts': [[1.33, 3.39029400580580, 1.], [2.33, 1.], [5., 5.5]],
+                       'HMM', 'no-sil utts': []}
   ###
   # Save results
   ###   
   # A text file with a line by feature and a list of a numbers on each line (space-separated)
   # Interpretation of the features dimensions when available: reduced phone states + phones                                                              
-  hmm_phone_info = get_hmm_phone_info(model_files['HMM-phones'])
+  hmm_phone_info = model_reader.get_hmm_phone_info(model_files['HMM-phones'])
 
   if not(out is None):
     with open(out + '_hmm_phone_info.txt') as fh:
