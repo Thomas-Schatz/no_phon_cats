@@ -115,10 +115,10 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
       activation_levels[model, 'no-sil-utts'] = sharpness.activation_sharpness(model, segments_nosil,
                                                                                get_utt_features)
   """
-  durs = {('GMM', 'all utts'): [[1.33, 3.39029400580580, 1.], [2.33, 1.], [], [5., 5.5], []],
-          ('HMM', 'no-sil utts'): [[], [1.33, 3.39029400580580, 1.], [2.33, 1.], [], [5., 5.5], []]}
-  activation_levels = {('GMM', 'all utts'): [[1.33, 3.39029400580580, 1.], [2.33, 1.], [5., 5.5]],
-                       ('HMM', 'no-sil utts'): []}
+  durs = {('GMM', 'all-utts'): [[1.33, 3.39029400580580, 1.], [2.33, 1.], [], [5., 5.5], []],
+          ('HMM', 'no-sil-utts'): [[], [1.33, 3.39029400580580, 1.], [2.33, 1.], [], [5., 5.5], []]}
+  activation_levels = {('GMM', 'all-utts'): [[1.33, 3.39029400580580, 1.], [2.33, 1.], [5., 5.5]],
+                       ('HMM', 'no-sil-utts'): []}
   ###
   # Save results
   ###   
@@ -133,11 +133,11 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
       for s1, s2, s3 in hmm_reduced_state_info:
         fh.write('{} {} {}\n'.format(s1, s2, s3))
     for model, condition in durs:
-      with open(out + 'duration_{}_{}.txt'.format(model, condition), 'w', encoding='UTF-8') as fh:
+      with open(out + '_duration_{}_{}.txt'.format(model, condition), 'w', encoding='UTF-8') as fh:
         for feat_durs in durs[model, condition]:
           fh.write(" ".join(map(str, feat_durs)) + '\n')
     for model, condition in activation_levels:
-      with open(out + 'sharpness_{}_{}.txt'.format(model, condition), 'w', encoding='UTF-8') as fh:
+      with open(out + '_sharpness_{}_{}.txt'.format(model, condition), 'w', encoding='UTF-8') as fh:
         for feat_sharps in activation_levels[model, condition]:
           fh.write(" ".join(map(str, feat_sharps)) + '\n')
   else:
