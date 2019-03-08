@@ -128,18 +128,18 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
 
   if not(out is None):
     with open(out + '_hmm_phone_info.txt', 'w', encoding='UTF-8') as fh:
-      fh.print(" ".join(hmm_phone_info) + '\n')
+      fh.write(" ".join(hmm_phone_info) + '\n')
     with open(out + '_hmm_state_info.txt', 'w', encoding='UTF-8') as fh:
       for s1, s2, s3 in hmm_reduced_state_info:
-        fh.print('{} {} {}\n'.format(s1, s2, s3))
+        fh.write('{} {} {}\n'.format(s1, s2, s3))
     for model, condition in durs:
       with open(out + 'duration_{}_{}.txt'.format(model, condition), 'w', encoding='UTF-8') as fh:
         for feat_durs in durs[model, condition]:
-          fh.print(" ".join(map(str, feat_durs)) + '\n')
+          fh.wrtie(" ".join(map(str, feat_durs)) + '\n')
     for model, condition in activation_levels:
       with open(out + 'sharpness_{}_{}.txt'.format(model, condition), 'w', encoding='UTF-8') as fh:
         for feat_sharps in activation_levels[model, condition]:
-          fh.print(" ".join(map(str, feat_sharps)) + '\n')
+          fh.write(" ".join(map(str, feat_sharps)) + '\n')
   else:
     return durs, activation_levels, hmm_phone_info, hmm_reduced_state_info
 
