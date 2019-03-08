@@ -44,17 +44,15 @@ def control_utt_sils(corpus):
 
 def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
             max_nb_frames=3, frame_dur=.01, min_thr=.05, duration_test_type='basic',
+            skip_sharpness=False,
             verbose=False):
-  """
   # With max_nb_frames=3 True False False False True would work
   ###
   # Load conf
   ###
   corpus_files, corpus = corpus_reader.read(corpus_name, corpus_conf, verbose=verbose)
   feat_files = read_conf(feats_conf)
-  """  
   model_files = read_conf(model_conf)
-  """
   # Control for utterance onset/offset silence and utterance-medial silence
   # e.g. for WSJ: 
   #  1178/4855 total utterances have no within-utterance silence
@@ -65,9 +63,7 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
   # Prepare features access
   ###
   # folding function for HMM state (not a string)
-  """
   hmm_state_folder, hmm_reduced_state_info = model_reader.get_hmm_state_folder(model_files['HMM-transitions'])
-  """
   # This gives us functions for each of GMM, HMM,
   # HMM-tied-state and HMM-state that take as input a utt-id and return the utt features in dense
   # nb_frames x observed_feat_dim matrix format along with timestamps associated with each frame.
@@ -106,19 +102,15 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
   ###
   # Measure activation sharpness feature by feature (how activated does that feature get when it's dominant).
   # Save individual values.
-  models = ['HMM-phone', 'GMM', 'HMM-state'] #, 'HMM-tied-state']
-  activation_levels = {}  # duration and number of dominant episodes for each feature dimension
-  for model in models:
-      print(model)
-      activation_levels[model, 'all-utts'] = sharpness.activation_sharpness(model, all_segments,
-                                                                            get_utt_features)
-      activation_levels[model, 'no-sil-utts'] = sharpness.activation_sharpness(model, segments_nosil,
-                                                                               get_utt_features)
-  """
-  durs = {('GMM', 'all-utts'): [[1.33, 3.39029400580580, 1.], [2.33, 1.], [], [5., 5.5], []],
-          ('HMM', 'no-sil-utts'): [[], [1.33, 3.39029400580580, 1.], [2.33, 1.], [], [5., 5.5], []]}
-  activation_levels = {('GMM', 'all-utts'): [[1.33, 3.39029400580580, 1.], [2.33, 1.], [5., 5.5]],
-                       ('HMM', 'no-sil-utts'): []}
+  if not(skip_sharpness):
+    models = ['HMM-phone', 'GMM', 'HMM-state'] #, 'HMM-tied-state']
+    activation_levels = {}  # duration and number of dominant episodes for each feature dimension
+    for model in models:
+        print(model)
+        activation_levels[model, 'all-utts'] = sharpness.activation_sharpness(model, all_segments,
+                                                                              get_utt_features)
+        activation_levels[model, 'no-sil-utts'] = sharpness.activation_sharpness(model, segments_nosil,
+                                                                                 get_utt_features)
   ###
   # Save results
   ###   
@@ -136,11 +128,14 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
       with open(out + '_duration_{}_{}.txt'.format(model, condition), 'w', encoding='UTF-8') as fh:
         for feat_durs in durs[model, condition]:
           fh.write(" ".join(map(str, feat_durs)) + '\n')
-    for model, condition in activation_levels:
-      with open(out + '_sharpness_{}_{}.txt'.format(model, condition), 'w', encoding='UTF-8') as fh:
-        for feat_sharps in activation_levels[model, condition]:
-          fh.write(" ".join(map(str, feat_sharps)) + '\n')
+    if not(skip_sharpness):
+      for model, condition in activation_levels:
+        with open(out + '_sharpness_{}_{}.txt'.format(model, condition), 'w', encoding='UTF-8') as fh:
+          for feat_sharps in activation_levels[model, condition]:
+            fh.write(" ".join(map(str, feat_sharps)) + '\n')
   else:
+    if skip_sharpness:
+      activation_levels = 'skipped'
     return durs, activation_levels, hmm_phone_info, hmm_reduced_state_info
 
 
@@ -155,9 +150,11 @@ if __name__=='__main__':
     parser.add_argument('--frame_dur', type=float, default=.01)
     parser.add_argument('--min_thr', type=float, default=.05)
     parser.add_argument('--duration_test_type', default='basic')
+    parser.add_argument('--skip_sharpness', action='store_true')
     parser.add_argument('--verbose', action='store_true')
     args = parser.parse_args()
     collect(args.corpus_name, args.corpus_conf, args.feats_conf, args.model_conf,
             out=args.out, max_nb_frames=args.max_nb_frame, frame_dur=args.frame_dur,
             min_thr=args.min_thr, duration_test_type=args.duration_test_type,
+            skip_sharpness=args.skip_sharpness,
             verbose=args.verbose)
