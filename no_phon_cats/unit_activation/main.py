@@ -65,7 +65,7 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
   # folding function for HMM state (not a string)
   """
   hmm_state_folder, hmm_reduced_state_info = model_reader.get_hmm_state_folder(model_files['HMM-transitions'])
-    """
+  """
   # This gives us functions for each of GMM, HMM,
   # HMM-tied-state and HMM-state that take as input a utt-id and return the utt features in dense
   # nb_frames x observed_feat_dim matrix format along with timestamps associated with each frame.
