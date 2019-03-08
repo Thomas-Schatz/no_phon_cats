@@ -135,7 +135,7 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
     for model, condition in durs:
       with open(out + 'duration_{}_{}.txt'.format(model, condition), 'w', encoding='UTF-8') as fh:
         for feat_durs in durs[model, condition]:
-          fh.wrtie(" ".join(map(str, feat_durs)) + '\n')
+          fh.write(" ".join(map(str, feat_durs)) + '\n')
     for model, condition in activation_levels:
       with open(out + 'sharpness_{}_{}.txt'.format(model, condition), 'w', encoding='UTF-8') as fh:
         for feat_sharps in activation_levels[model, condition]:
