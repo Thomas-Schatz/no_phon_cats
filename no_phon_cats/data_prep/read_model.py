@@ -8,6 +8,8 @@ Created on Thu Mar 7 13:15:00 2019
 import numpy as np
 import pandas as pd
 import io
+import re
+import codecs
 
 
 def read_kaldi_transitions(transitions_file):
@@ -65,6 +67,40 @@ def get_hmm_state_info(transitions_file):
     return trans_info
 
 
+def read_kaldi_phonemap(phones_file, word_position_dependent=True):
+    phonemap = dict()
+    for line in open(phones_file, 'r', encoding='UTF-8'):
+        phone, code = line.strip().split(' ')
+        # remove word position markers
+        if word_position_dependent and phone[-2:] in ['_I', '_B', '_E', '_S']:
+            phone = phone[:-2]
+        phonemap[code] = phone
+    return phonemap
+
+
+def get_phone_order(phonemap):
+    """
+    Output an easily reproducible phone order from a phonemap
+    obtained by reading a phones.txt file with k2a.read_kaldi_phonemap
+    """
+    # remove kaldi disambiguation symbols and <eps> from the phonemap,
+    # as those shouldn't be in the phone_order
+    codes = list(phonemap.keys())
+    for code in codes:
+        if re.match(u'#[0-9]+$|<eps>$', phonemap[code]):
+            del phonemap[code]
+
+    # order the phones in an easily reproducible way unique is needed
+    # since there can be several variants of each phone in the map
+    phone_order = list(np.unique(list(phonemap.values())))
+    phone_order.sort()  # to guarantee reproducible ordering
+    return phone_order
+
+
+def get_hmm_phone_info(phones_file, word_position_dependent=True):
+  return get_phone_order(read_kaldi_phonemap(phones_file, word_position_dependent))
+
+
 def augment_hmm_state(state, trans_info):
     return (state, *trans_info[state])
 
@@ -110,6 +146,6 @@ def get_hmm_state_folder(transitions_file):
   reduced_states = list(set([reducer(state) for state in hmm_state_info.values()]))
   # to get info about hash for reduced_state: reduced_states.index(hash) -> returns phone, hmm-state-id, pdf-id
   hmm_state_folder = lambda feats: fold_state(feats, get_folding_plan(hmm_state_info, reduced_states, reducer))
-  return hmm_state_folder
+  return hmm_state_folder, reduced_states
 
   
