@@ -25,7 +25,7 @@ def activation_sharpness(model, utts, get_utt_features):
     feat_d = feats.shape[1] 
     sharps = [[] for e in range(feat_d)]
     get_f = get_utt_features[model]
-    for i, (utt, start, stop) in enumerate(utts):
+    for i, (utt, utt_start, utt_stop) in enumerate(utts):
         if i % 1000 == 0:
             print("Processed {} out of {} utterances".format(i, len(utts)))
         utt_times, utt_feats = get_f(utt)     
