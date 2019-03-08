@@ -162,7 +162,7 @@ def get_features_getter(feat_files, include_tied_state_HMM=False, HMM_states_fol
                                                                                              one_indexed=False)
     get_utt_features = {'GMM': lambda utt_id: load_utt_features(feat_files['GMM'], utt_id),
                         'HMM-phone': lambda utt_id: load_utt_features(feat_files['HMM'], utt_id),
-                        'HMM-state': lambda utt_id: HMM_states_folder(load_utt_kaldi_post(t['HMM-state'],
+                        'HMM-state': lambda utt_id: HMM_states_folder(*load_utt_kaldi_post(t['HMM-state'],
                                                                                           post['HMM-state'],
                                                                                           dim['HMM-state'],
                                                                                           utt_id))
