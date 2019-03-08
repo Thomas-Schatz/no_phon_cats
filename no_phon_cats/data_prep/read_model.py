@@ -145,7 +145,7 @@ def get_hmm_state_folder(transitions_file):
   reducer = lambda state: (state[0], state[2], state[4])
   reduced_states = list(set([reducer(state) for state in hmm_state_info.values()]))
   # to get info about hash for reduced_state: reduced_states.index(hash) -> returns phone, hmm-state-id, pdf-id
-  hmm_state_folder = lambda feats: fold_state(feats, get_folding_plan(hmm_state_info, reduced_states, reducer))
+  hmm_state_folder = lambda times, feats: (times, fold_state(feats, get_folding_plan(hmm_state_info, reduced_states, reducer)))
   return hmm_state_folder, reduced_states
 
   
