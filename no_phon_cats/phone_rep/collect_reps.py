@@ -22,6 +22,7 @@ for each phone in the corpus and optionally save it to disk
 import pandas as pd
 import no_phon_cats.data_prep.read_corpus as corpus_reader
 import no_phon_cats.data_prep.read_feats as feats_reader
+import no_phon_cats.data_prep.read_model as model_reader
 import no_phon_cats.phone_rep.context as contexts
 import no_phon_cats.phone_rep.model_rep as modelreps
 import argparse
@@ -82,7 +83,7 @@ def read_conf(conf_file):
     return files
 
 
-def collect(corpus_name, corpus_conf, feats_conf, out=None,
+def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
             rep_type='dominant_unit_around_center',
             context_type='word_phone_spk_context',
             dur=50, verbose=False):
@@ -93,16 +94,24 @@ def collect(corpus_name, corpus_conf, feats_conf, out=None,
     dur: int (Dominant units around frame center not fused, +/- dur ms from frame center)
   """
   corpus_files, corpus = corpus_reader.read(corpus_name, corpus_conf, verbose=verbose)
-
-  feat_files = read_conf(feats_conf)  
+  feat_files = read_conf(feats_conf) 
+  model_files = read_conf(model_conf)
+  ###
   # Prepare features access
+  ###
+  # folding function for HMM state (not a string)
+  # (We get complementary info about the HMM states in the representation at this stage)
+  hmm_state_folder, hmm_reduced_state_info = model_reader.get_hmm_state_folder(model_files['HMM-transitions'])
   # This gives us functions for each of GMM, HMM,
-  # HMM-tied-state and HMM-state that take as input a utt-id and return the utt features in dense
+  # and HMM-state that take as input a utt-id and return the utt features in dense
   # nb_frames x observed_feat_dim matrix format along with timestamps associated with each frame.
   # Be careful about available memory, as this loads sparse kaldi posterior text files in RAM
-  get_utt_features = feats_reader.get_features_getter(feat_files)
+  get_utt_features = feats_reader.get_features_getter(feat_files,
+                                                      include_tied_state_HMM=False,
+                                                      HMM_states_folder=hmm_state_folder)
 
-  models = ['GMM', 'HMM-phone', 'HMM-state', 'HMM-tied-state']
+
+  models = ['GMM', 'HMM-phone', 'HMM-state']  #, 'HMM-tied-state']
 
   # model rep. functions
   if rep_type == 'dominant_unit_around_center':
@@ -129,10 +138,6 @@ def collect(corpus_name, corpus_conf, feats_conf, out=None,
     data.to_csv(out)
   else:
     return data
-  # We do **not** get complementary info about the HMM states in the representation at this stage
-  #  hmm_state_info = get_hmm_state_info(model_files['HMM-transitions'])
-  #  modelrep_f['HMM-state'] = lambda *args: augment_hmm_state(rep_f(*args), hmm_state_info)
-
 
 
 if __name__=='__main__':
@@ -140,9 +145,10 @@ if __name__=='__main__':
     parser.add_argument('corpus_name')
     parser.add_argument('corpus_conf')
     parser.add_argument('feats_conf')
+    parser.add_argument('model_conf')
     parser.add_argument('out')
     parser.add_argument('--dur', type=int, default=50)
     parser.add_argument('--verbose', action='store_true')
     args = parser.parse_args()
-    collect(args.corpus_name, args.corpus_conf, args.feats_conf,
+    collect(args.corpus_name, args.corpus_conf, args.feats_conf, args.model_conf,
             out=args.out, dur=args.dur, verbose=args.verbose)

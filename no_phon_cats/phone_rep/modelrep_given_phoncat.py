@@ -39,7 +39,6 @@ import time
 import seaborn
 import argparse
 from ast import literal_eval as make_tuple
-import no_phon_cats.phone_rep.augment_rep as augment_rep
 import no_phon_cats.phone_rep.select_phone_cats as select_phone_cats
 
 
@@ -191,7 +190,7 @@ def estimate_H(cp_data, estimator, models, repcol_name, estimator_name='H',
 # Use number of unq rep as our 'H' estimator
 # Generously correct for possible misalignment by computing cardinal of minimal hitting set for the 
 # model representation.
-#TODO: return a lower bound and an upper bound on that cardinal, which if not equal
+# Returns a lower bound and an upper bound on that cardinal, which if not equal
 # get more precise as max_time increases (although they get closer together exponentially slowly in the
 # worst case I think)
 def count_unq_rep(data, max_time=5, verbose=False):
@@ -228,13 +227,6 @@ def barplot_nunq(nb_unq_rep, y_col='nunique', fig_path=None):
         g.savefig(fig_path)
 
 
-def read_conf(conf_file):
-    # Get paths to all relevant files
-    with io.open(conf_file, 'r') as fh:
-        files = yaml.load(fh)
-    return files
-
-
 def add_phone_id(data):
     data['phone ID'] = data.groupby(['utt', 'start', 'stop']).ngroup()
     return data
@@ -250,37 +242,19 @@ def model_as_col(data):
     for model, model_df in zip(models[1:], model_dfs[1:]):
         del model_df['model']
         df = pd.merge(df, model_df, on=merge_cols, suffixes=['', ' ' + model])
-    df = df.rename(columns={'modelrep': 'modelrep ' + models[0], 'reduced modelrep': 'reduced modelrep ' + models[0]})
+    df = df.rename(columns={'modelrep': 'modelrep ' + models[0]})  #, 'reduced modelrep': 'reduced modelrep ' + models[0]})
     assert float(len(df)) == len(data) / float(len(models))
     del df['model']
     return df, models
 
 
-def prepare_data(data_file, model_conf):
+def prepare_data(data_file):
     # Load and prepare data 
     data = pd.read_csv(data_file, low_memory=False)
     del data["Unnamed: 0"]
     # parse tuple not properly parsed by read_csv (this is slow)
     data['modelrep'] = [make_tuple(modelrep) for modelrep in data['modelrep']]
     data['word_trans'] = [make_tuple(trans) for trans in data['word_trans']]
-    
-    # Make 'HMM-state' model-rep. more explicit
-    model_files = read_conf(model_conf) 
-    hmm_state_info = augment_rep.get_hmm_state_info(model_files['HMM-transitions'])
-    # order: phone, word-position, hmm-state, transition-index, state-pdf
-    explicit = lambda state: hmm_state_info[state]
-    data['modelrep'] = [tuple([explicit(state) for state in seq]) if model=='HMM-state' else seq
-                                         for model, seq in zip(data['model'], data['modelrep'])]
-    # Create 'reduced modelrep' column with reduced HMM-state (ignore word-position and transition-index and get unique hash)
-    # rep for other models are copied without change
-    # Do we want to remove 'hmm-state'?
-    # Will make a difference only if the same state-pdf is used for two possible successive states of a same phone.
-    # Let's keep it for now.
-    phones = list(set([e[0] for rep, model in zip(data['modelrep'], data['model']) if model=='HMM-state' for e in rep]))
-    hmm_states = list(set([e[2] for rep, model in zip(data['modelrep'], data['model']) if model=='HMM-state' for e in rep]))
-    reduce = lambda state: phones.index(state[0]) + len(phones)*hmm_states.index(state[2]) + len(phones)*len(hmm_states)*state[4]
-    data['reduced modelrep'] = [tuple([reduce(state) for state in seq]) if model=='HMM-state' else seq
-                                         for model, seq in zip(data['model'], data['modelrep'])]
     # add phone ID column
     data = add_phone_id(data)
     # get one line per phone, with different model reps as different columns
@@ -288,7 +262,7 @@ def prepare_data(data_file, model_conf):
     return data, models
 
 
-def run(in_file, model_conf, out_file, fig_path_l, fig_path_u, by_spk=True, by_word=True, by_phon_context=True,
+def run(in_file, out_file, fig_path_l, fig_path_u, by_spk=True, by_word=True, by_phon_context=True,
         position_in_word='middle', min_wlen=5, min_occ=10, max_time=5,
         sample_items=True, sampling_type='uniform', seed=0, nb_samples=10,
         verbose=False, save_cp_data=False):
@@ -297,13 +271,12 @@ def run(in_file, model_conf, out_file, fig_path_l, fig_path_u, by_spk=True, by_w
 
     Input:
         in_file: path to csv file containing modelreps
-        model_conf: conf file containing path to hmm transitions file
         out_file: path to csv file where selected context_phones + counts will be stored
         fig_path_l: path where to store bar plot of results (lower bound)
         fig_path_u: path where to store bar plot of results (upper bound)
     """
     # ad hoc
-    repcol = 'reduced modelrep'
+    repcol = 'modelrep'
 
     if sample_items:
         # bad design: should allow nb_samples > min_occ and change random_select to handle that
@@ -321,7 +294,7 @@ def run(in_file, model_conf, out_file, fig_path_l, fig_path_u, by_spk=True, by_w
             # silently dropped.
             sel_f = lambda data: select_phone_cats.random_select_across_spk(data, nb_samples)
 
-    data, models = prepare_data(in_file, model_conf)
+    data, models = prepare_data(in_file)
     # Select context + phones of interest
     context_phones = select_phone_cats.select_phones_in_contexts(data, by_spk=by_spk, by_word=by_word,
                                                                  by_phon_context=by_phon_context,
@@ -341,7 +314,7 @@ def run(in_file, model_conf, out_file, fig_path_l, fig_path_u, by_spk=True, by_w
         context_phones.to_csv(cp_path)
         for model in models:
             del cp_data['modelrep {}'.format(model)]
-            del cp_data['reduced modelrep {}'.format(model)]
+            #del cp_data['reduced modelrep {}'.format(model)]
         cp_data.to_csv(cp_data_path)
     else:
         if sample_items:
@@ -367,7 +340,6 @@ def run(in_file, model_conf, out_file, fig_path_l, fig_path_u, by_spk=True, by_w
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('in_file')
-    parser.add_argument('model_conf')
     parser.add_argument('out_file')
     parser.add_argument('fig_path_l')
     parser.add_argument('fig_path_u')
@@ -390,7 +362,7 @@ if __name__=='__main__':
     if args.sample_items:
         assert args.nb_samples > 0
     print(args)
-    run(args.in_file, args.model_conf, args.out_file, args.fig_path_l, args.fig_path_u,
+    run(args.in_file, args.out_file, args.fig_path_l, args.fig_path_u,
         by_spk=args.by_spk, by_word=args.by_word, by_phon_context=args.by_phon_context,
         position_in_word=args.position_in_word, min_wlen=args.min_wlen, min_occ=args.min_occ, max_time=args.max_time,
         sample_items=args.sample_items, sampling_type=args.sampling_type, seed=args.seed, nb_samples=args.nb_samples,
