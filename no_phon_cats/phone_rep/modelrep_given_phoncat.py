@@ -33,6 +33,7 @@ matplotlib.use('agg')
 
 import numpy as np
 import pandas as pd
+import os.path as path
 import io
 import yaml
 import time
@@ -262,7 +263,8 @@ def prepare_data(data_file):
     return data, models
 
 
-def run(in_file, out_file, fig_path_l, fig_path_u, by_spk=True, by_word=True, by_phon_context=True,
+def run(in_file, out_file, fig_path_l, fig_path_u, exclude_phones='',
+        by_spk=True, by_word=True, by_phon_context=True,
         position_in_word='middle', min_wlen=5, min_occ=10, max_time=5,
         sample_items=True, sampling_type='uniform', seed=0, nb_samples=10,
         verbose=False, save_cp_data=False):
@@ -277,7 +279,6 @@ def run(in_file, out_file, fig_path_l, fig_path_u, by_spk=True, by_word=True, by
     """
     # ad hoc
     repcol = 'modelrep'
-
     if sample_items:
         # bad design: should allow nb_samples > min_occ and change random_select to handle that
         # graciously like random_select_across_spk... 
@@ -295,6 +296,18 @@ def run(in_file, out_file, fig_path_l, fig_path_u, by_spk=True, by_word=True, by
             sel_f = lambda data: select_phone_cats.random_select_across_spk(data, nb_samples)
 
     data, models = prepare_data(in_file)
+
+    # allow exclusion of specific items, e.g. based on listening tests
+    if exclude_phones != '':
+        assert path.exists(exclude_phones)
+        with open(exclude_phones, 'r') as fh:
+            lines = fh.readlines()
+        assert len(lines) == 1
+        exclude_phone_ids = [int(e) for e in lines[0].strip().split()]
+        excluded = data[[(e in exclude_phone_ids) for e in data['phone ID']]]
+        data = data[[not(e in exclude_phone_ids) for e in data['phone ID']]]
+        print('Excluded entries: {}'.format(excluded))
+
     # Select context + phones of interest
     context_phones = select_phone_cats.select_phones_in_contexts(data, by_spk=by_spk, by_word=by_word,
                                                                  by_phon_context=by_phon_context,
@@ -343,6 +356,7 @@ if __name__=='__main__':
     parser.add_argument('out_file')
     parser.add_argument('fig_path_l')
     parser.add_argument('fig_path_u')
+    parser.add_argument('--exclude_phones', type=str, default='')
     parser.add_argument('--by_spk', action='store_true')
     parser.add_argument('--by_word', action='store_true')
     parser.add_argument('--by_phon_context', action='store_true')
@@ -363,6 +377,7 @@ if __name__=='__main__':
         assert args.nb_samples > 0
     print(args)
     run(args.in_file, args.out_file, args.fig_path_l, args.fig_path_u,
+        exclude_phones=args.exclude_phones,
         by_spk=args.by_spk, by_word=args.by_word, by_phon_context=args.by_phon_context,
         position_in_word=args.position_in_word, min_wlen=args.min_wlen, min_occ=args.min_occ, max_time=args.max_time,
         sample_items=args.sample_items, sampling_type=args.sampling_type, seed=args.seed, nb_samples=args.nb_samples,
