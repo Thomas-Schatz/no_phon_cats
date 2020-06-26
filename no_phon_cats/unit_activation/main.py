@@ -62,15 +62,22 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
   ###
   # Prepare features access
   ###
+  # Very ad hoc switch between only GMM and GMM+HMM case...
   # folding function for HMM state (not a string)
-  hmm_state_folder, hmm_reduced_state_info = model_reader.get_hmm_state_folder(model_files['HMM-transitions'])
-  # This gives us functions for each of GMM, HMM,
-  # HMM-tied-state and HMM-state that take as input a utt-id and return the utt features in dense
-  # nb_frames x observed_feat_dim matrix format along with timestamps associated with each frame.
-  # Be careful about available memory, as this loads sparse kaldi posterior text files in RAM
-  get_utt_features = feats_reader.get_features_getter(feat_files,
-                                                      include_tied_state_HMM=False,
-                                                      HMM_states_folder=hmm_state_folder)
+  if any(['HMM' in e for e in model_files]):
+    hmm_state_folder, hmm_reduced_state_info = model_reader.get_hmm_state_folder(model_files['HMM-transitions'])
+    # This gives us functions for each of GMM, HMM,
+    # HMM-tied-state and HMM-state that take as input a utt-id and return the utt features in dense
+    # nb_frames x observed_feat_dim matrix format along with timestamps associated with each frame.
+    # Be careful about available memory, as this loads sparse kaldi posterior text files in RAM
+    get_utt_features = feats_reader.get_features_getter(feat_files,
+                                                        include_tied_state_HMM=False,
+                                                        HMM_states_folder=hmm_state_folder)
+  else:
+    get_utt_features = feats_reader.get_features_getter(feat_files,
+                                                        include_phone_HMM=False,
+                                                        include_state_HMM=False,
+                                                        include_tied_state_HMM=False)
   ###
   # Duration
   ###
@@ -80,7 +87,11 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
   # We could average first on individual sentences and then over all sentences.
   # Emmanuel tried it without seeing anything different, so here we just average over everything ignoring the grouping
   # into sentences.
-  models = ['GMM', 'HMM-phone', 'HMM-state']  #'HMM-tied-state']
+  # Again ad hoc switch
+  if any(['HMM' in e for e in model_files]):
+    models = ['GMM', 'HMM-phone', 'HMM-state']  #'HMM-tied-state']
+  else:
+    models = ['GMM']
   if duration_test_type == 'basic':
     get_dur = lambda feats: duration.get_duration_basic(feats, frame_dur)
   elif duration_test_type == 'conservative':
@@ -103,7 +114,11 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
   # Measure activation sharpness feature by feature (how activated does that feature get when it's dominant).
   # Save individual values.
   if not(skip_sharpness):
-    models = ['HMM-phone', 'GMM', 'HMM-state'] #, 'HMM-tied-state']
+    # Again ad hoc switch
+    if any(['HMM' in e for e in model_files]):
+      models = ['GMM', 'HMM-phone', 'HMM-state']  #'HMM-tied-state']
+    else:
+      models = ['GMM']
     activation_levels = {}  # duration and number of dominant episodes for each feature dimension
     for model in models:
         print(model)
@@ -115,15 +130,17 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
   # Save results
   ###   
   # A text file with a line by feature and a list of a numbers on each line (space-separated)
-  # Interpretation of the features dimensions when available: reduced phone states + phones                                                              
-  hmm_phone_info = model_reader.get_hmm_phone_info(model_files['HMM-phones'])
-
+  # Interpretation of the features dimensions when available: reduced phone states + phones
+  # Again ad hoc switch
+  if any(['HMM' in e for e in model_files]):                                                            
+    hmm_phone_info = model_reader.get_hmm_phone_info(model_files['HMM-phones'])
+    if not(out is None):
+      with open(out + '_hmm_phone_info.txt', 'w', encoding='UTF-8') as fh:
+        fh.write(" ".join(hmm_phone_info) + '\n')
+      with open(out + '_hmm_state_info.txt', 'w', encoding='UTF-8') as fh:
+        for s1, s2, s3 in hmm_reduced_state_info:
+          fh.write('{} {} {}\n'.format(s1, s2, s3))
   if not(out is None):
-    with open(out + '_hmm_phone_info.txt', 'w', encoding='UTF-8') as fh:
-      fh.write(" ".join(hmm_phone_info) + '\n')
-    with open(out + '_hmm_state_info.txt', 'w', encoding='UTF-8') as fh:
-      for s1, s2, s3 in hmm_reduced_state_info:
-        fh.write('{} {} {}\n'.format(s1, s2, s3))
     for model, condition in durs:
       with open(out + '_duration_{}_{}.txt'.format(model, condition), 'w', encoding='UTF-8') as fh:
         for feat_durs in durs[model, condition]:
@@ -136,7 +153,11 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
   else:
     if skip_sharpness:
       activation_levels = 'skipped'
-    return durs, activation_levels, hmm_phone_info, hmm_reduced_state_info
+      # Again ad hoc switch
+      if any(['HMM' in e for e in model_files]):  
+        return durs, activation_levels, hmm_phone_info, hmm_reduced_state_info
+      else:
+        return durs, activation_levels, None, None
 
 
 if __name__=='__main__':

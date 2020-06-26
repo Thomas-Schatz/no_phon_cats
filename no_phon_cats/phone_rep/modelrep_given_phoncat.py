@@ -205,6 +205,28 @@ def count_unq_rep(data, max_time=5, verbose=False):
 # Other utilities
 ###
 
+# ad hoc...
+def barplot_nunq_GMM_only(nb_unq_rep, y_col='nunique', fig_path=None):
+    # results plot
+    palette = {'GMM': seaborn.xkcd_rgb["light peach"]}
+    g = seaborn.catplot(x='model', y=y_col, kind='bar', data=nb_unq_rep,
+                        order=['GMM'],
+                        palette=palette)
+    g.set_xticklabels(['GMM'], fontsize=20)
+    g.ax.set_ylim([1, 3.2])
+    g.set_ylabels('Nb. distinct representations', fontsize=20)
+    g.set_xlabels('')  #Model', fontsize=20)
+    for tick in g.axes[0,0].yaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    for ax in g.axes.flatten():
+        ax.tick_params(axis='both', which='both', width=0, length=0)
+        ax.set_axisbelow(True)
+        ax.grid(axis='y')
+    g.despine(left=True)
+    if not(fig_path is None):
+        g.savefig(fig_path)
+
+
 def barplot_nunq(nb_unq_rep, y_col='nunique', fig_path=None):
     # results plot
     palette = {'HMM-phone': seaborn.xkcd_rgb["gunmetal"],
@@ -345,9 +367,13 @@ def run(in_file, out_file, fig_path_l, fig_path_u, exclude_phones='',
         nb_unq_rep['nunique_ub'] = [f for e, f in nb_unq_rep['nunique']]
         nb_unq_rep.to_csv(out_file)
         # Bar plot
-        barplot_nunq(nb_unq_rep, y_col='nunique_lb', fig_path=fig_path_l)
-        barplot_nunq(nb_unq_rep, y_col='nunique_ub', fig_path=fig_path_u)
-
+        # ad hoc switch
+        if any(['HMM' in e for e in models]):
+            barplot_nunq(nb_unq_rep, y_col='nunique_lb', fig_path=fig_path_l)
+            barplot_nunq(nb_unq_rep, y_col='nunique_ub', fig_path=fig_path_u)
+        else:
+            barplot_nunq_GMM_only(nb_unq_rep, y_col='nunique_lb', fig_path=fig_path_l)
+            barplot_nunq_GMM_only(nb_unq_rep, y_col='nunique_ub', fig_path=fig_path_u)
 
 
 if __name__=='__main__':

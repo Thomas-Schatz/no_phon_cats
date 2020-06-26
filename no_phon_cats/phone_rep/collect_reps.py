@@ -99,19 +99,29 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
   ###
   # Prepare features access
   ###
+  # Very ad hoc switch between only GMM and GMM+HMM case...
   # folding function for HMM state (not a string)
   # (We get complementary info about the HMM states in the representation at this stage)
-  hmm_state_folder, hmm_reduced_state_info = model_reader.get_hmm_state_folder(model_files['HMM-transitions'])
-  # This gives us functions for each of GMM, HMM,
-  # and HMM-state that take as input a utt-id and return the utt features in dense
-  # nb_frames x observed_feat_dim matrix format along with timestamps associated with each frame.
-  # Be careful about available memory, as this loads sparse kaldi posterior text files in RAM
-  get_utt_features = feats_reader.get_features_getter(feat_files,
-                                                      include_tied_state_HMM=False,
-                                                      HMM_states_folder=hmm_state_folder)
+  if any(['HMM' in e for e in model_files]):
+    hmm_state_folder, hmm_reduced_state_info = model_reader.get_hmm_state_folder(model_files['HMM-transitions'])
+    # This gives us functions for each of GMM, HMM,
+    # and HMM-state that take as input a utt-id and return the utt features in dense
+    # nb_frames x observed_feat_dim matrix format along with timestamps associated with each frame.
+    # Be careful about available memory, as this loads sparse kaldi posterior text files in RAM
+    get_utt_features = feats_reader.get_features_getter(feat_files,
+                                                        include_tied_state_HMM=False,
+                                                        HMM_states_folder=hmm_state_folder)
+  else:
+    get_utt_features = feats_reader.get_features_getter(feat_files,
+                                                        include_phone_HMM=False,
+                                                        include_state_HMM=False,
+                                                        include_tied_state_HMM=False)
 
-
-  models = ['GMM', 'HMM-phone', 'HMM-state']  #, 'HMM-tied-state']
+  # Again ad hoc switch
+  if any(['HMM' in e for e in model_files]):
+    models = ['GMM', 'HMM-phone', 'HMM-state']  #'HMM-tied-state']
+  else:
+    models = ['GMM']
 
   # model rep. functions
   if rep_type == 'dominant_unit_around_center':
