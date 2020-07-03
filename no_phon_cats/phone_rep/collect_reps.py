@@ -129,7 +129,7 @@ def collect(corpus_name, corpus_conf, feats_conf, model_conf, out=None,
   elif rep_type == 'dominant_unit_at_center':
     # ignores dur arg...
     # return tuple here to be consistent with 'dominant_unit_around_center' output format
-    repf_f = lambda *args: (modelreps.dominant_unit_at_center(*args),)
+    rep_f = lambda *args: (modelreps.dominant_unit_at_center(*args),)
   else:
     raise ValueError('Unknown model representation type {}'.format(rep_type))
   modelrep_f = {model: rep_f for model in models}
